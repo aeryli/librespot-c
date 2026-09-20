@@ -15,5 +15,5 @@ jobs:
     steps:
       - name: run
         run: |
-          ls
+          chmod +x script.sh
           ./script.sh
