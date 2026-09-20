@@ -1,0 +1,23 @@
+name: Build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch: 
+
+jobs:
+  build:
+    name: run
+    runs-on: ubuntu-latest  # Runs on a fresh Linux virtual machine
+
+    steps:
+      - name: run
+        run: "./script.sh"
+
+      - name: Run Tests
+        run: npm test
+
+      - name: Build Project
+        run: npm run build
