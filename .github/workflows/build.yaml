@@ -13,6 +13,10 @@ jobs:
     runs-on: ubuntu-latest  # Runs on a fresh Linux virtual machine
 
     steps:
+    
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+        
       - name: run
         run: |
           chmod +x script.sh
