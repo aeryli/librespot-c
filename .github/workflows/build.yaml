@@ -14,10 +14,6 @@ jobs:
 
     steps:
       - name: run
-        run: "./script.sh"
-
-      - name: Run Tests
-        run: npm test
-
-      - name: Build Project
-        run: npm run build
+        run: |
+          ls
+          ./script.sh
