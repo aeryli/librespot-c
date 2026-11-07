@@ -1,0 +1,102 @@
+name: Release & build (ai-d)
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-release:
+    name: Build (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: Linux
+            artifact_name: librespot-linux-x86_64
+          - os: macos-latest
+            name: macOS
+            artifact_name: librespot-macos-x86_64
+          - os: windows-latest
+            name: Windows
+            artifact_name: librespot-windows-x86_64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+
+      - name: Install Linux system dependencies
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libasound2-dev libpulse-dev libssl-dev
+
+      - name: Build Rust cdylib
+        shell: bash
+        run: cargo build --release --manifest-path core/Cargo.toml
+
+      - name: Configure CMake
+        shell: bash
+        run: cmake -S . -B build-ci -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build CMake project
+        shell: bash
+        run: cmake --build build-ci --config Release --parallel
+
+      - name: Install CMake project
+        shell: bash
+        run: |
+          cmake --install build-ci --config Release --prefix "$RUNNER_TEMP/${{ matrix.artifact_name }}"
+
+      - name: Package artifacts
+        shell: bash
+        run: |
+          cd "$RUNNER_TEMP"
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            7z a "${{ github.workspace }}/${{ matrix.artifact_name }}.zip" "./${{ matrix.artifact_name }}/*"
+          else
+            tar -czvf "${{ github.workspace }}/${{ matrix.artifact_name }}.tar.gz" -C "./${{ matrix.artifact_name }}" .
+          fi
+
+      - name: Upload artifact archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            ${{ matrix.artifact_name }}.zip
+            ${{ matrix.artifact_name }}.tar.gz
+
+  create-release:
+    name: Create GitHub Release
+    needs: build-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false
