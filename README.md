@@ -1,7 +1,7 @@
 # librespot-c
 C bindings for the Rust-based [librespot](https://github.com/librespot-org/librespot) library.
 It exposes Spotify authentication, session handling, playback, and player events to C and C++ projects.
-
+ 
 ## Requirements
 
 - [CMake](https://cmake.org/download/) 3.12 or newer
